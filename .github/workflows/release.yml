@@ -1,4 +1,4 @@
-# Test builds and releases (#165). The work is oxiguitar's reusable workflow
+# Test builds and releases (#165). The work is oxiguitar-packages' reusable workflow
 # plugin-release.yml: it runs build-oxp.sh on Linux (x86_64, ARM64), Windows
 # (x86_64, ARM64) and macOS and makes a zip per target, a .deb and an .rpm
 # (oxiguitar-eq), a per-user Windows installer, a macOS .pkg and
@@ -28,13 +28,12 @@ concurrency:
 
 jobs:
   release:
-    uses: mateusrdp/oxiguitar/.github/workflows/plugin-release.yml@v0.12.1
+    uses: mateusrdp/oxiguitar-packages/.github/workflows/plugin-release.yml@main
     with:
       name: eq
       title: "Equalizer"
       description: "A three-band or ten-band equalizer on any track, with or without an amp model."
       # ci.yml has run the tests on six systems.
       test: false
-      tools-ref: v0.12.1
     permissions:
       contents: write
