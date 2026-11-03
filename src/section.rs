@@ -34,9 +34,10 @@ fn label(text: impl Into<String>, muted: bool) -> Widget {
 }
 
 /// A band's slider's id: the mode's key, then the band's place
-/// (`basic:0`, `graphic:9`).
+/// (`basic-0`, `graphic-9`; ids are lowercase letters and digits joined
+/// by `-` or `.`).
 fn band_id(mode: Mode, index: usize) -> String {
-    format!("{}:{index}", mode.key())
+    format!("{}-{index}", mode.key())
 }
 
 /// The names of the bands of `mode`.
@@ -158,7 +159,7 @@ mod tests {
             .on(&track(), &mut settings, "mode", TabEvent::Chosen(1))
             .unwrap();
         let basic = Section.content(&track(), &settings);
-        assert_eq!(ids(&basic), ["mode", "basic:0", "basic:1", "basic:2", FLAT]);
+        assert_eq!(ids(&basic), ["mode", "basic-0", "basic-1", "basic-2", FLAT]);
         assert!(matches!(
             &basic.rows[1].widgets[..],
             [Widget::Label { text, .. }, Widget::Slider { min: -12.0, max: 12.0, .. }, Widget::Label { text: value, muted: true }]
@@ -180,6 +181,28 @@ mod tests {
         ));
     }
 
+    /// What the section shows in every mode, with every band moved, is
+    /// what the host can show: valid, unique ids and sane ranges.
+    #[test]
+    fn every_mode_s_contents_can_be_shown() {
+        for mode in 0..3 {
+            let mut settings = Map::new();
+            Section
+                .on(&track(), &mut settings, "mode", TabEvent::Chosen(mode))
+                .unwrap();
+            for i in 0..10 {
+                for kind in ["basic", "graphic"] {
+                    let id = format!("{kind}-{i}");
+                    Section
+                        .on(&track(), &mut settings, &id, TabEvent::Slid(3.0))
+                        .unwrap();
+                }
+            }
+            let content = Section.content(&track(), &settings);
+            assert_eq!(content.problems(), Vec::<String>::new(), "mode {mode}");
+        }
+    }
+
     #[test]
     fn sliders_set_their_band_on_the_half_decibel_and_flat_only_the_shown_mode() {
         let mut settings = Map::new();
@@ -188,13 +211,13 @@ mod tests {
             Section.on(&track(), s, id, e).unwrap();
         };
         on(&mut settings, "mode", TabEvent::Chosen(1));
-        on(&mut settings, "basic:2", TabEvent::Slid(4.3));
-        on(&mut settings, "basic:0", TabEvent::Slid(-20.0));
+        on(&mut settings, "basic-2", TabEvent::Slid(4.3));
+        on(&mut settings, "basic-0", TabEvent::Slid(-20.0));
         // A slider of the mode not shown changes nothing.
-        on(&mut settings, "graphic:3", TabEvent::Slid(5.0));
+        on(&mut settings, "graphic-3", TabEvent::Slid(5.0));
         on(&mut settings, "mode", TabEvent::Chosen(2));
-        on(&mut settings, "graphic:9", TabEvent::Slid(-2.74));
-        on(&mut settings, "basic:1", TabEvent::Slid(5.0));
+        on(&mut settings, "graphic-9", TabEvent::Slid(-2.74));
+        on(&mut settings, "basic-1", TabEvent::Slid(5.0));
         let t = Track::from_map(&settings);
         assert_eq!(t.mode, Mode::Graphic);
         assert_eq!(t.basic, [-12.0, 0.0, 4.5]);
