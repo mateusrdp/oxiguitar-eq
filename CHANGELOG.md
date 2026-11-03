@@ -17,6 +17,9 @@ follows [Semantic Versioning](https://semver.org/).
   picked plays. Kept per track in the song's `.oxg` file under
   `oxiguitar.eq`. Robert Bristow-Johnson's cookbook biquads, our own code;
   no latency.
+- The track dialog's section **Equalizer**, for every track: the mode (Off,
+  Basic, Graphic), a slider per band of the mode picked, and **Flat**,
+  which sets that mode's bands to 0 dB.
 - `build-oxp.sh`, the contract test and the real-time checks through
   OxiGuitar's plugin host (`tests/contract.rs`), and the release and publish
   workflows (oxiguitar's at v0.12.1).

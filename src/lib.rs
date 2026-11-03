@@ -10,15 +10,20 @@
 //!   own code, no latency.
 //! - `settings` is a track's choice: off, three bands (Bass, Middle,
 //!   Treble) or ten (31 Hz to 16 kHz), each −12 to +12 dB.
+//! - `section` shows it in the track dialog, as the section "Equalizer".
 
 use oxiguitar_plugin::audio::PrepareEffect;
-use oxiguitar_plugin::{Effect, Error, Host, Plugin, Processor};
+use oxiguitar_plugin::{Effect, Error, Host, Plugin, Processor, TrackSection};
 
 pub mod eq;
+pub mod section;
 pub mod settings;
 
 /// The effect's id in the manifest.
 pub const EFFECT: &str = "eq";
+
+/// The track dialog's section's id in the manifest.
+pub const SECTION: &str = "eq";
 
 /// The plugin.
 #[derive(Debug)]
@@ -31,6 +36,10 @@ impl Plugin for EqPlugin {
 
     fn effect(&self, id: &str) -> Option<&dyn Effect> {
         (id == EFFECT).then_some(self as &dyn Effect)
+    }
+
+    fn track_section(&self, id: &str) -> Option<&dyn TrackSection> {
+        (id == SECTION).then_some(&section::Section as &dyn TrackSection)
     }
 }
 
