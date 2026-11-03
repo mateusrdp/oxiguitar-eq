@@ -9,5 +9,8 @@
   "homepage": "https://github.com/mateusrdp/oxiguitar-eq",
   "effects": [
     { "id": "eq", "name": "Equalizer" }
+  ],
+  "track_sections": [
+    { "id": "eq", "title": "Equalizer" }
   ]
 }

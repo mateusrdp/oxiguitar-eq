@@ -30,16 +30,16 @@ pub const BASIC: [(&str, Shape, f64); 3] = [
 /// The graphic mode's bands, one octave apart from 31 Hz to 16 kHz:
 /// name and frequency in Hz (exact octaves of 1 kHz).
 pub const GRAPHIC: [(&str, f64); 10] = [
-    ("31", 31.25),
-    ("62", 62.5),
-    ("125", 125.0),
-    ("250", 250.0),
-    ("500", 500.0),
-    ("1k", 1000.0),
-    ("2k", 2000.0),
-    ("4k", 4000.0),
-    ("8k", 8000.0),
-    ("16k", 16_000.0),
+    ("31 Hz", 31.25),
+    ("62 Hz", 62.5),
+    ("125 Hz", 125.0),
+    ("250 Hz", 250.0),
+    ("500 Hz", 500.0),
+    ("1 kHz", 1000.0),
+    ("2 kHz", 2000.0),
+    ("4 kHz", 4000.0),
+    ("8 kHz", 8000.0),
+    ("16 kHz", 16_000.0),
 ];
 
 /// The graphic mode's bands' Q: one octave between the points of half
@@ -135,6 +135,15 @@ impl Track {
         map.insert("graphic".into(), json!(self.graphic));
     }
 
+    /// The gains of the mode picked: none when it is off.
+    pub fn shown(&mut self) -> &mut [f32] {
+        match self.mode {
+            Mode::Off => &mut [],
+            Mode::Basic => &mut self.basic,
+            Mode::Graphic => &mut self.graphic,
+        }
+    }
+
     /// The bands that play.
     pub fn bands(&self) -> Vec<Band> {
         match self.mode {
@@ -196,6 +205,20 @@ mod tests {
         assert_eq!(gain(0.76), 1.0);
         assert_eq!(gain(-0.1).to_string(), "0");
         assert_eq!(gain(f64::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn the_gains_shown_are_the_picked_mode_s() {
+        let mut t = Track {
+            mode: Mode::Basic,
+            basic: [1.0, 2.0, 3.0],
+            graphic: [4.0; 10],
+        };
+        assert_eq!(t.shown(), [1.0, 2.0, 3.0]);
+        t.mode = Mode::Graphic;
+        assert_eq!(t.shown().len(), 10);
+        t.mode = Mode::Off;
+        assert!(t.shown().is_empty());
     }
 
     #[test]
