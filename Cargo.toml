@@ -1,0 +1,55 @@
+[package]
+name = "oxiguitar-eq-plugin"
+description = "The OxiGuitar equalizer plugin: a three-band or ten-band equalizer on any track, set in the track dialog."
+version = "0.1.0"
+edition = "2024"
+# Rust from rustup, raised only when something needs it (CONTRIBUTING.md).
+rust-version = "1.99"
+license = "GPL-3.0-or-later"
+authors = ["Mateus Rocha de Paula", "The OxiGuitar contributors"]
+repository = "https://github.com/mateusrdp/oxiguitar-eq"
+homepage = "https://github.com/mateusrdp/oxiguitar-eq"
+publish = false
+
+[lib]
+# An ordinary library for tests, and eq.oxp when built with
+# `--features oxp --crate-type cdylib` (build-oxp.sh).
+crate-type = ["lib"]
+
+[features]
+oxp = []
+
+[dependencies]
+# The SDK, from OxiGuitar's repository at the tag of the release this is
+# built for: v0.11.0 has interface 1.4, frozen. Nothing of OxiGuitar's is on
+# crates.io. The filters are our own code (src/eq.rs): no other library.
+oxiguitar-plugin = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
+
+[dev-dependencies]
+# The contract suite and the real-time checks (tests/contract.rs) run the
+# built .oxp file through OxiGuitar's own plugin host.
+oxiguitar-plugin-test = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
+oxiguitar-host = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
+
+# Plugins deny `unsafe` rather than forbid it: `export_plugin!` allows it on
+# the two attributes it generates, and nowhere else.
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unreachable_pub = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+
+[profile.release]
+# Small files. Keep the default `panic = "unwind"`: a panic is then caught
+# and reported as an error instead of closing OxiGuitar.
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+# Its own workspace, wherever the folder is copied.
+[workspace]
