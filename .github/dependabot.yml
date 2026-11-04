@@ -8,6 +8,14 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # OxiGuitar's SDK and model are pinned by git tag on purpose (interface
+      # 1.4 is frozen). Dependabot reads the tag against the crates' own
+      # versions and proposes older tags, so these four move by hand.
+      - dependency-name: "oxiguitar-model"
+      - dependency-name: "oxiguitar-plugin"
+      - dependency-name: "oxiguitar-plugin-api"
+      - dependency-name: "oxiguitar-plugin-test"
   - package-ecosystem: github-actions
     directory: /
     target-branch: develop
