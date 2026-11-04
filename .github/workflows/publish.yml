@@ -1,4 +1,4 @@
-# Tells the package repositories, the Homebrew tap and winget when the
+# Tells the package repositories and winget when the
 # maintainer publishes a release (#165). The work is oxiguitar-packages' reusable
 # workflow plugin-publish.yml: it checks the release holds every file and
 # sum, then sends the event. It needs the secrets PACKAGES_TOKEN and
