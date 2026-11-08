@@ -1,7 +1,7 @@
 [package]
 name = "oxiguitar-eq-plugin"
 description = "The OxiGuitar equalizer plugin: a three-band or ten-band equalizer on any track, set in the track dialog."
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 # Rust from rustup, raised only when something needs it (CONTRIBUTING.md).
 rust-version = "1.99"
@@ -21,15 +21,15 @@ oxp = []
 
 [dependencies]
 # The SDK, from OxiGuitar's repository at the tag of the release this is
-# built for: v0.11.0 has interface 1.4, frozen. Nothing of OxiGuitar's is on
+# built for: v0.14.0 has interface 1.5, frozen. Nothing of OxiGuitar's is on
 # crates.io. The filters are our own code (src/eq.rs): no other library.
-oxiguitar-plugin = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
+oxiguitar-plugin = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
 
 [dev-dependencies]
 # The contract suite and the real-time checks (tests/contract.rs) run the
 # built .oxp file through OxiGuitar's own plugin host.
-oxiguitar-plugin-test = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
-oxiguitar-host = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.11.0" }
+oxiguitar-plugin-test = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
+oxiguitar-host = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
 
 # Plugins deny `unsafe` rather than forbid it: `export_plugin!` allows it on
 # the two attributes it generates, and nowhere else.

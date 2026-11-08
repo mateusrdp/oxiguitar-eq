@@ -1,8 +1,8 @@
 {
-  "interface": "1.4",
+  "interface": "1.5",
   "id": "oxiguitar.eq",
   "name": "Equalizer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A three-band or ten-band equalizer on any track, with or without an amp model, set in the track dialog.",
   "authors": ["Mateus Rocha de Paula", "The OxiGuitar contributors"],
   "license": "GPL-3.0-or-later",

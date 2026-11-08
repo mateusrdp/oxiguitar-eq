@@ -6,6 +6,20 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
+### Changed
+
+- **The equalizer follows its section while the song plays** (#7,
+  mateusrdp/oxiguitar#232): moving a band's slider, Flat or the mode
+  changes the sound at once, each band gliding to its new gain over
+  20 ms (its coefficients recomputed every 32 frames) so nothing clicks.
+  Before, a change was heard only after pausing and playing again. Needs
+  OxiGuitar 0.14 (plugin interface 1.5): the SDK is the tag v0.14.0.
+- Every band of both modes is always in place, at 0 dB when its mode isn't
+  picked or it is flat; a band at 0 dB with nothing left in it costs
+  nothing, so Off and Flat still leave the sound untouched.
+
 ## [0.1.0] - 2026-11-04
 
 ### Added
