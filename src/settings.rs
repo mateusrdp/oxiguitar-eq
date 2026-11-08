@@ -46,6 +46,9 @@ pub const GRAPHIC: [(&str, f64); 10] = [
 /// the gain.
 pub const GRAPHIC_Q: f64 = 1.41;
 
+/// How many bands there are in both modes together.
+pub const ALL: usize = BASIC.len() + GRAPHIC.len();
+
 /// Which bands play.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Mode {
@@ -145,6 +148,45 @@ impl Track {
     }
 
     /// The bands that play.
+    /// Every band the equalizer has, basic then graphic, each at its gain
+    /// if its mode is the one picked and at 0 dB if not: what plays, in a
+    /// shape that never changes, so a change of gain or of mode while the
+    /// song plays is a glide (mateusrdp/oxiguitar#232).
+    pub fn every_band(&self) -> [Band; ALL] {
+        let basic = BASIC
+            .iter()
+            .enumerate()
+            .map(|(i, &(_, shape, frequency))| Band {
+                shape,
+                frequency,
+                gain: if self.mode == Mode::Basic {
+                    f64::from(self.basic[i])
+                } else {
+                    0.0
+                },
+            });
+        let graphic = GRAPHIC.iter().enumerate().map(|(i, &(_, frequency))| Band {
+            shape: Shape::Peak { q: GRAPHIC_Q },
+            frequency,
+            gain: if self.mode == Mode::Graphic {
+                f64::from(self.graphic[i])
+            } else {
+                0.0
+            },
+        });
+        let mut out = [Band {
+            shape: Shape::HighShelf,
+            frequency: 0.0,
+            gain: 0.0,
+        }; ALL];
+        for (slot, band) in out.iter_mut().zip(basic.chain(graphic)) {
+            *slot = band;
+        }
+        out
+    }
+
+    /// The bands that play, as [`Track::every_band`] leaves them out at
+    /// 0 dB.
     pub fn bands(&self) -> Vec<Band> {
         match self.mode {
             Mode::Off => Vec::new(),
@@ -173,6 +215,27 @@ impl Track {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_band_is_there_and_only_the_picked_mode_s_have_gains() {
+        let mut t = Track {
+            mode: Mode::Basic,
+            basic: [3.0, -1.5, 0.5],
+            graphic: [1.0; 10],
+        };
+        let gains = |t: &Track| t.every_band().iter().map(|b| b.gain).collect::<Vec<_>>();
+        let mut want = vec![3.0, -1.5, 0.5];
+        want.extend([0.0; 10]);
+        assert_eq!(gains(&t), want);
+        t.mode = Mode::Graphic;
+        let mut want = vec![0.0; 3];
+        want.extend([1.0; 10]);
+        assert_eq!(gains(&t), want);
+        t.mode = Mode::Off;
+        assert_eq!(gains(&t), vec![0.0; ALL]);
+        assert_eq!(t.every_band()[3].frequency, 31.25);
+        assert_eq!(t.every_band()[0].shape, Shape::LowShelf);
+    }
 
     #[test]
     fn settings_round_trip_and_keep_unknown_keys() {

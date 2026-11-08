@@ -7,6 +7,12 @@
 //! S = 1. Our own code; no library. Computed in `f64`, run in the
 //! transposed direct form II, so even the 31 Hz band stays exact at
 //! 96 kHz. No latency.
+//!
+//! [`Bank`] is what plays: every band the equalizer can have, each gliding
+//! to a new gain over [`GLIDE`] seconds when the track's settings change
+//! while the song plays (mateusrdp/oxiguitar#232), its coefficients
+//! recomputed every [`BLOCK`] frames, so a moved slider or another mode
+//! makes no click.
 
 use std::f64::consts::{PI, SQRT_2};
 
@@ -129,6 +135,15 @@ impl Coefficients {
     }
 }
 
+/// A band of 0 dB: the sound passes as it is.
+const IDENTITY: Coefficients = Coefficients {
+    b0: 1.0,
+    b1: 0.0,
+    b2: 0.0,
+    a1: 0.0,
+    a2: 0.0,
+};
+
 /// One band running on two channels.
 #[derive(Clone, Debug)]
 struct Stage {
@@ -155,6 +170,134 @@ impl Stage {
             if z.abs() < 1e-20 {
                 *z = 0.0;
             }
+        }
+    }
+}
+
+/// How long a band takes to glide to a new gain, in seconds.
+pub const GLIDE: f64 = 0.02;
+
+/// How many frames a band's coefficients hold while it glides.
+pub const BLOCK: usize = 32;
+
+/// Every band an equalizer can have, in series on a stereo track, each
+/// gliding to its target gain. A band at 0 dB costs nothing once its
+/// last sound has left it.
+#[derive(Clone, Debug)]
+pub struct Bank {
+    rate: f64,
+    /// The bands, at the gains they have now.
+    bands: Vec<Band>,
+    /// The gains they glide to.
+    targets: Vec<f64>,
+    /// What each gain changes by every block until it is there.
+    steps: Vec<f64>,
+    stages: Vec<Stage>,
+    /// Frames left before the next block.
+    left: usize,
+    gliding: bool,
+}
+
+impl Bank {
+    /// `bands`, at their gains, at `rate` Hz. Allocates; the rest
+    /// doesn't.
+    pub fn new(bands: &[Band], rate: f64) -> Bank {
+        Bank {
+            rate,
+            bands: bands.to_vec(),
+            targets: bands.iter().map(|b| b.gain).collect(),
+            steps: vec![0.0; bands.len()],
+            stages: bands
+                .iter()
+                .map(|b| Stage {
+                    c: Coefficients::of(*b, rate).unwrap_or(IDENTITY),
+                    z: [[0.0; 2]; 2],
+                })
+                .collect(),
+            left: 0,
+            gliding: false,
+        }
+    }
+
+    /// Glides to `gains`, one per band in the order of [`Bank::new`]'s;
+    /// extra ones are ignored, missing ones keep their target. On the
+    /// audio thread: allocates nothing.
+    pub fn glide_to(&mut self, gains: &[f64]) {
+        let blocks = (GLIDE * self.rate / BLOCK as f64).ceil().max(1.0);
+        for (i, &g) in gains.iter().enumerate().take(self.bands.len()) {
+            let g = if g.is_finite() { g } else { 0.0 };
+            self.targets[i] = g;
+            self.steps[i] = (g - self.bands[i].gain) / blocks;
+        }
+        self.gliding = self
+            .bands
+            .iter()
+            .zip(&self.targets)
+            .any(|(b, t)| b.gain != *t);
+    }
+
+    /// Whether it changes nothing, now and later.
+    pub fn is_flat(&self) -> bool {
+        !self.gliding && self.bands.iter().all(|b| b.gain == 0.0)
+    }
+
+    /// Its gain in dB at `frequency` Hz, as its bands stand now.
+    pub fn response(&self, frequency: f64) -> f64 {
+        self.stages
+            .iter()
+            .map(|s| s.c.response(frequency, self.rate))
+            .sum()
+    }
+
+    /// The bands' gains now.
+    pub fn gains(&self) -> impl Iterator<Item = f64> + '_ {
+        self.bands.iter().map(|b| b.gain)
+    }
+
+    /// One block's step of every gliding band.
+    fn step(&mut self) {
+        if !self.gliding {
+            return;
+        }
+        let mut still = false;
+        for i in 0..self.bands.len() {
+            let (gain, target, step) = (self.bands[i].gain, self.targets[i], self.steps[i]);
+            if gain == target {
+                continue;
+            }
+            let next = gain + step;
+            let next = if (step > 0.0 && next >= target) || (step <= 0.0 && next <= target) {
+                target
+            } else {
+                still = true;
+                next
+            };
+            self.bands[i].gain = next;
+            self.stages[i].c = Coefficients::of(self.bands[i], self.rate).unwrap_or(IDENTITY);
+        }
+        self.gliding = still;
+    }
+
+    /// Filters a track's two channels in place. Allocates nothing.
+    pub fn process(&mut self, left: &mut [f32], right: &mut [f32]) {
+        let n = left.len().min(right.len());
+        let mut at = 0;
+        while at < n {
+            if self.left == 0 {
+                self.step();
+                self.left = BLOCK;
+            }
+            let m = (n - at).min(self.left);
+            for stage in &mut self.stages {
+                // At 0 dB with nothing left in it, a band is the identity.
+                if stage.c == IDENTITY && stage.z == [[0.0; 2]; 2] {
+                    continue;
+                }
+                stage.run(0, &mut left[at..at + m]);
+                stage.run(1, &mut right[at..at + m]);
+            }
+            at += m;
+            self.left -= m;
         }
     }
 }
@@ -333,6 +476,107 @@ mod tests {
                 assert!((l + r).abs() < 1e-6);
             }
         }
+    }
+
+    fn bank_bands(gains: [f64; 3]) -> Vec<Band> {
+        vec![
+            Band {
+                shape: Shape::LowShelf,
+                frequency: 120.0,
+                gain: gains[0],
+            },
+            peak(700.0, gains[1], 0.8),
+            Band {
+                shape: Shape::HighShelf,
+                frequency: 3200.0,
+                gain: gains[2],
+            },
+        ]
+    }
+
+    /// A bank plays as the chain of the same bands does.
+    #[test]
+    fn a_bank_at_rest_is_its_chain() {
+        let bands = bank_bands([6.0, -9.0, 4.5]);
+        let sound: Vec<f32> = (0..1000)
+            .map(|i| ((i * 37) % 101) as f32 / 101.0 - 0.5)
+            .collect();
+        let (mut a, mut b) = (sound.clone(), sound.clone());
+        let mut chain = Chain::new(&bands, 48_000.0);
+        chain.process(&mut a, &mut b);
+        let (mut c, mut d) = (sound.clone(), sound.clone());
+        let mut bank = Bank::new(&bands, 48_000.0);
+        for (l, r) in c.chunks_mut(100).zip(d.chunks_mut(100)) {
+            bank.process(l, r);
+        }
+        for (x, y) in a.iter().zip(&c) {
+            assert!((x - y).abs() < 1e-6, "{x} {y}");
+        }
+        let flat = Bank::new(&bank_bands([0.0; 3]), 48_000.0);
+        assert!(flat.is_flat());
+        assert!(!bank.is_flat());
+    }
+
+    /// #232: a new gain is reached in GLIDE seconds, in small steps: a
+    /// steady sine changes level smoothly, never by a jump.
+    #[test]
+    fn a_new_gain_glides_without_a_jump() {
+        let rate = 48_000.0;
+        let mut bank = Bank::new(&bank_bands([0.0; 3]), rate);
+        let f = 60.0;
+        let n = 48_000;
+        let mut left: Vec<f32> = (0..n)
+            .map(|i| (2.0 * PI * f * i as f64 / rate).sin() as f32 * 0.25)
+            .collect();
+        let mut right = left.clone();
+        let input = left.clone();
+        let half = n / 2;
+        let (l1, l2) = left.split_at_mut(half);
+        let (r1, r2) = right.split_at_mut(half);
+        bank.process(l1, r1);
+        bank.glide_to(&[12.0, 0.0, 0.0]);
+        assert!(!bank.is_flat());
+        bank.process(l2, r2);
+        assert_eq!(bank.gains().collect::<Vec<_>>(), [12.0, 0.0, 0.0]);
+        // Before the change it passes; after it, 12 dB louder.
+        assert_eq!(&left[..half], &input[..half]);
+        let rms = |x: &[f32]| {
+            (x.iter().map(|v| f64::from(*v).powi(2)).sum::<f64>() / x.len() as f64).sqrt()
+        };
+        let late = &left[n - 4800..];
+        let db = 20.0 * (rms(late) / rms(&input[n - 4800..])).log10();
+        assert!((db - bank.response(f)).abs() < 0.1, "{db}");
+        // No sample jumps further than the loudest sine could move in one
+        // frame (a click would).
+        let most = 2.0 * PI * f / rate * 0.25 * 10f64.powf(12.0 / 20.0) * 1.5;
+        for w in left.windows(2) {
+            assert!(
+                f64::from((w[1] - w[0]).abs()) <= most,
+                "{} to {}",
+                w[0],
+                w[1]
+            );
+        }
+    }
+
+    /// Back to 0 dB, a band stops costing anything once its sound is out.
+    #[test]
+    fn a_band_back_at_zero_rests() {
+        let mut bank = Bank::new(&bank_bands([6.0, 0.0, 0.0]), 48_000.0);
+        let mut l = vec![0.5f32; 4096];
+        let mut r = l.clone();
+        bank.process(&mut l, &mut r);
+        bank.glide_to(&[0.0, 0.0, 0.0]);
+        let mut l = vec![0.0f32; 4096];
+        let mut r = l.clone();
+        bank.process(&mut l, &mut r);
+        bank.process(&mut l, &mut r);
+        assert!(bank.is_flat());
+        assert!(
+            bank.stages
+                .iter()
+                .all(|s| s.c == IDENTITY && s.z == [[0.0; 2]; 2])
+        );
     }
 
     /// Silence after sound ends in exact zeros, never subnormal numbers.
