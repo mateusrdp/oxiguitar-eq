@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
 ### Changed
 
 - **The equalizer follows its section while the song plays** (#7,

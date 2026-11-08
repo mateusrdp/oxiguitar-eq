@@ -1,7 +1,7 @@
 [package]
 name = "oxiguitar-eq-plugin"
 description = "The OxiGuitar equalizer plugin: a three-band or ten-band equalizer on any track, set in the track dialog."
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 # Rust from rustup, raised only when something needs it (CONTRIBUTING.md).
 rust-version = "1.99"
