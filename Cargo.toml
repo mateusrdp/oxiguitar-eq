@@ -20,16 +20,17 @@ crate-type = ["lib"]
 oxp = []
 
 [dependencies]
-# The SDK, from OxiGuitar's repository at the tag of the release this is
-# built for: v0.14.0 has interface 1.5, frozen. Nothing of OxiGuitar's is on
+# The SDK, from OxiGuitar's repository: interface 1.8 is not released yet,
+# so this is a commit of its pull request (mateusrdp/oxiguitar#292); the
+# tag once it exists. Nothing of OxiGuitar's is on
 # crates.io. The filters are our own code (src/eq.rs): no other library.
-oxiguitar-plugin = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
+oxiguitar-plugin = { git = "https://github.com/mateusrdp/oxiguitar", rev = "4906c6db3bef86e2d6fa8e2879ca79b0119fc30e" }
 
 [dev-dependencies]
 # The contract suite and the real-time checks (tests/contract.rs) run the
 # built .oxp file through OxiGuitar's own plugin host.
-oxiguitar-plugin-test = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
-oxiguitar-host = { git = "https://github.com/mateusrdp/oxiguitar", tag = "v0.14.0" }
+oxiguitar-plugin-test = { git = "https://github.com/mateusrdp/oxiguitar", rev = "4906c6db3bef86e2d6fa8e2879ca79b0119fc30e" }
+oxiguitar-host = { git = "https://github.com/mateusrdp/oxiguitar", rev = "4906c6db3bef86e2d6fa8e2879ca79b0119fc30e" }
 
 # Plugins deny `unsafe` rather than forbid it: `export_plugin!` allows it on
 # the two attributes it generates, and nowhere else.

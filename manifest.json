@@ -1,5 +1,5 @@
 {
-  "interface": "1.5",
+  "interface": "1.8",
   "id": "oxiguitar.eq",
   "name": "Equalizer",
   "version": "0.2.0",
@@ -8,7 +8,7 @@
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/mateusrdp/oxiguitar-eq",
   "effects": [
-    { "id": "eq", "name": "Equalizer" }
+    { "id": "eq", "name": "Equalizer", "order": 300 }
   ],
   "track_sections": [
     { "id": "eq", "title": "Equalizer" }
