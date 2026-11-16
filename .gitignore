@@ -12,3 +12,8 @@
 Thumbs.db
 
 /dist/
+
+# Understand Anything analysis artifacts
+.ua/intermediate/
+.ua/tmp/
+.ua/trash-\*/

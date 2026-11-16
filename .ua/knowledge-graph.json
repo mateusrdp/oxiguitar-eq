@@ -1,0 +1,1182 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "oxiguitar-eq-plugin",
+    "languages": [
+      "json",
+      "markdown",
+      "rust",
+      "shell",
+      "toml",
+      "yaml"
+    ],
+    "frameworks": [],
+    "description": "OxiGuitar equalizer plugin with 3-band and 10-band EQ modes",
+    "analyzedAt": "2026-11-07T17:56:07.649Z",
+    "gitCommitHash": "0760210d03bbcdaab82dace35b06461cae24058e"
+  },
+  "nodes": [
+    {
+      "id": "file:src/eq.rs",
+      "type": "file",
+      "name": "eq.rs",
+      "filePath": "src/eq.rs",
+      "summary": "Self-contained implementation of Robert Bristow-Johnson cookbook biquad filters: Shape enum (LowShelf, Peak, HighShelf), Band and Coefficients structs, Stage for per-channel filter state, and Chain for serial filter processing with audio sample I/O.",
+      "tags": [
+        "audio-processing",
+        "digital-filters",
+        "signal-processing",
+        "biquad",
+        "core-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/lib.rs",
+      "type": "file",
+      "name": "lib.rs",
+      "filePath": "src/lib.rs",
+      "summary": "Plugin entry point defining EqPlugin implementing the OxiGuitar plugin interface, with Through (bypass) and Equalizer (active) processing states and the effect/track_section registration functions.",
+      "tags": [
+        "entry-point",
+        "plugin-interface",
+        "plugin-registration",
+        "biquad",
+        "core-logic",
+        "tested"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/section.rs",
+      "type": "file",
+      "name": "section.rs",
+      "filePath": "src/section.rs",
+      "summary": "UI section implementation for the track dialog's Equalizer tab, rendering mode selection and per-band gain sliders using the OxiGuitar widget system.",
+      "tags": [
+        "ui",
+        "track-dialog",
+        "widget",
+        "gui",
+        "user-interface"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/settings.rs",
+      "type": "file",
+      "name": "settings.rs",
+      "filePath": "src/settings.rs",
+      "summary": "Persistent settings model for the equalizer: Mode enum (Off, Basic, Graphic), Track struct with per-mode band gains, JSON serialization/deserialization, and band count helpers.",
+      "tags": [
+        "settings",
+        "persistence",
+        "serialization",
+        "data-model",
+        "configuration"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:src/eq.rs:Shape",
+      "type": "class",
+      "name": "Shape",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        15,
+        26
+      ],
+      "summary": "Enum of three biquad filter shapes: LowShelf (bass boost/cut), Peak (bell curve), HighShelf (treble boost/cut).",
+      "tags": [
+        "filter-shape",
+        "enum",
+        "signal-processing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/eq.rs:Band",
+      "type": "class",
+      "name": "Band",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        30,
+        37
+      ],
+      "summary": "Struct holding a filter's shape, center frequency in Hz, and gain in dB — the fundamental unit of an EQ band.",
+      "tags": [
+        "band",
+        "filter-parameter",
+        "data-structure"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/eq.rs:Coefficients",
+      "type": "class",
+      "name": "Coefficients",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        41,
+        47
+      ],
+      "summary": "Pre-computed biquad filter coefficients (b0, b1, b2, a1, a2) derived from a Band's shape, frequency, and gain at a given sample rate.",
+      "tags": [
+        "filter-coefficients",
+        "biquad",
+        "signal-processing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/eq.rs:Stage",
+      "type": "class",
+      "name": "Stage",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        134,
+        138
+      ],
+      "summary": "Per-channel filter stage holding pre-computed coefficients and two-channel delay line state (z) for stereo audio processing.",
+      "tags": [
+        "filter-stage",
+        "state",
+        "stereo"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/eq.rs:Chain",
+      "type": "class",
+      "name": "Chain",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        164,
+        166
+      ],
+      "summary": "Serial chain of filter stages that processes audio samples through all bands. Supports flat detection, frequency response computation, and stereo sample processing.",
+      "tags": [
+        "filter-chain",
+        "audio-processing",
+        "serial-processing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/eq.rs:Coefficients::of",
+      "type": "function",
+      "name": "of",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        57,
+        110
+      ],
+      "summary": "Factory method that computes biquad filter coefficients from a Band and sample rate, handling the math for low-shelf, peak, and high-shelf shapes.",
+      "tags": [
+        "factory",
+        "filter-coefficients",
+        "math"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/eq.rs:Coefficients::response",
+      "type": "function",
+      "name": "response",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        114,
+        129
+      ],
+      "summary": "Computes the frequency response magnitude in dB at a given frequency for this filter stage.",
+      "tags": [
+        "frequency-response",
+        "analysis",
+        "signal-processing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/eq.rs:Stage::run",
+      "type": "function",
+      "name": "run",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        141,
+        159
+      ],
+      "summary": "Processes a single stereo sample through this filter stage, updating the delay line state.",
+      "tags": [
+        "audio-processing",
+        "sample-processing",
+        "real-time"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/eq.rs:Chain::process",
+      "type": "function",
+      "name": "process",
+      "filePath": "src/eq.rs",
+      "lineRange": [
+        198,
+        203
+      ],
+      "summary": "Processes left and right audio channels through all stages in the chain, buffering in 256-sample chunks.",
+      "tags": [
+        "audio-processing",
+        "stereo",
+        "real-time"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/lib.rs:EqPlugin",
+      "type": "class",
+      "name": "EqPlugin",
+      "filePath": "src/lib.rs",
+      "lineRange": [
+        30,
+        55
+      ],
+      "summary": "Main plugin struct implementing the OxiGuitar plugin interface: start, effect, track_section, and prepare methods that wire up the equalizer into the host.",
+      "tags": [
+        "plugin",
+        "entry-point",
+        "plugin-interface"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/lib.rs:Equalizer",
+      "type": "class",
+      "name": "Equalizer",
+      "filePath": "src/lib.rs",
+      "lineRange": [
+        66,
+        71
+      ],
+      "summary": "Active equalizer processing state that wraps a Chain and delegates audio processing to it.",
+      "tags": [
+        "processing-state",
+        "audio-processing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib.rs:prepare",
+      "type": "function",
+      "name": "prepare",
+      "filePath": "src/lib.rs",
+      "lineRange": [
+        47,
+        55
+      ],
+      "summary": "Prepares the plugin for a track: reads settings, builds a Chain from the track's bands, and returns either a Through (bypass) or Equalizer processor.",
+      "tags": [
+        "initialization",
+        "plugin-lifecycle"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/section.rs:Section",
+      "type": "class",
+      "name": "Section",
+      "filePath": "src/section.rs",
+      "lineRange": [
+        27,
+        121
+      ],
+      "summary": "UI section for the track dialog's Equalizer tab: renders mode selection and per-band gain sliders, handles user interaction events.",
+      "tags": [
+        "ui",
+        "track-dialog",
+        "widget",
+        "gui"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/section.rs:content",
+      "type": "function",
+      "name": "content",
+      "filePath": "src/section.rs",
+      "lineRange": [
+        53,
+        93
+      ],
+      "summary": "Builds the UI widget tree for the equalizer section, showing the mode selector and the bands for the currently active mode.",
+      "tags": [
+        "ui-rendering",
+        "widget-tree"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/section.rs:on",
+      "type": "function",
+      "name": "on",
+      "filePath": "src/section.rs",
+      "lineRange": [
+        95,
+        121
+      ],
+      "summary": "Event handler for the equalizer section: processes mode changes and slider movements, updating settings accordingly.",
+      "tags": [
+        "event-handler",
+        "ui-interaction"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/settings.rs:Mode",
+      "type": "class",
+      "name": "Mode",
+      "filePath": "src/settings.rs",
+      "lineRange": [
+        51,
+        59
+      ],
+      "summary": "Enum of three EQ modes: Off (bypass), Basic (3-band: bass/middle/treble), and Graphic (10-band octave-spaced).",
+      "tags": [
+        "mode",
+        "enum",
+        "user-config"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/settings.rs:Track",
+      "type": "class",
+      "name": "Track",
+      "filePath": "src/settings.rs",
+      "lineRange": [
+        82,
+        89
+      ],
+      "summary": "Per-track equalizer settings: current mode, 3 basic-band gains, and 10 graphic-band gains. Supports JSON serialization and deserialization.",
+      "tags": [
+        "data-model",
+        "persistence",
+        "settings"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/settings.rs:gain",
+      "type": "function",
+      "name": "gain",
+      "filePath": "src/settings.rs",
+      "lineRange": [
+        93,
+        100
+      ],
+      "summary": "Quantizes a gain value to half-decibel steps in the -12 to +12 dB range.",
+      "tags": [
+        "quantization",
+        "gain-control"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/settings.rs:bands",
+      "type": "function",
+      "name": "bands",
+      "filePath": "src/settings.rs",
+      "lineRange": [
+        148,
+        170
+      ],
+      "summary": "Returns Band objects for the currently active mode, converting stored gain values to the band definitions.",
+      "tags": [
+        "band-construction",
+        "mode-aware"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:.github/workflows/ci.yml",
+      "type": "pipeline",
+      "name": "ci.yml",
+      "filePath": ".github/workflows/ci.yml",
+      "summary": "GitHub Actions CI workflow that runs on push and pull requests: builds the Rust plugin with cargo test, produces the .oxp artifact, and uploads it as a workflow artifact.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "testing",
+        "build"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:.github/workflows/publish.yml",
+      "type": "pipeline",
+      "name": "publish.yml",
+      "filePath": ".github/workflows/publish.yml",
+      "summary": "GitHub Actions workflow for publishing the plugin: creates release assets (zips, .deb, .rpm, installers) and uploads them to GitHub Releases.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "release",
+        "publishing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/release.yml",
+      "type": "pipeline",
+      "name": "release.yml",
+      "filePath": ".github/workflows/release.yml",
+      "summary": "GitHub Actions workflow triggered by GitHub releases: builds and publishes platform-specific artifacts for Linux, Windows, and macOS.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "release",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CHANGELOG.md",
+      "type": "document",
+      "name": "CHANGELOG.md",
+      "filePath": "CHANGELOG.md",
+      "summary": "Project changelog documenting version history, starting with the initial 0.1.0 release.",
+      "tags": [
+        "documentation",
+        "changelog",
+        "version-history"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "Project instructions for AI coding assistants: build commands, test procedures, and plugin interface details.",
+      "tags": [
+        "documentation",
+        "ai-instructions",
+        "development"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CONTRIBUTING.md",
+      "type": "document",
+      "name": "CONTRIBUTING.md",
+      "filePath": "CONTRIBUTING.md",
+      "summary": "Contribution guidelines for the OxiGuitar equalizer plugin, covering the DCO sign-off process and development workflow.",
+      "tags": [
+        "documentation",
+        "contribution",
+        "development"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:Cargo.toml",
+      "type": "config",
+      "name": "Cargo.toml",
+      "filePath": "Cargo.toml",
+      "summary": "Rust package manifest for the oxiguitar-eq-plugin: declares the oxiguitar-plugin SDK dependency, test dependencies, lints (deny unsafe, warn on missing docs), and release profile settings.",
+      "tags": [
+        "configuration",
+        "rust",
+        "build-system",
+        "dependency-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Project overview documenting the equalizer plugin's features (3-band and 10-band modes, per-track settings), installation instructions, and build process.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "overview",
+        "user-guide"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:build-oxp.sh",
+      "type": "file",
+      "name": "build-oxp.sh",
+      "filePath": "build-oxp.sh",
+      "summary": "Build script that compiles the Rust plugin as a cdylib with the oxp feature and packages it as a versioned .oxp plugin file.",
+      "tags": [
+        "build-script",
+        "packaging",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:clippy.toml",
+      "type": "config",
+      "name": "clippy.toml",
+      "filePath": "clippy.toml",
+      "summary": "Rust Clippy linter configuration for the project.",
+      "tags": [
+        "configuration",
+        "rust",
+        "linting"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:deny.toml",
+      "type": "config",
+      "name": "deny.toml",
+      "filePath": "deny.toml",
+      "summary": "Cargo-deny configuration for license and advisory checks, enforcing GPL-3.0-or-later compliance.",
+      "tags": [
+        "configuration",
+        "rust",
+        "license",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:manifest.json",
+      "type": "config",
+      "name": "manifest.json",
+      "filePath": "manifest.json",
+      "summary": "OxiGuitar plugin manifest declaring the plugin ID (oxiguitar.eq), name (Equalizer), interface version (1.4), effects, and track sections.",
+      "tags": [
+        "configuration",
+        "plugin-manifest",
+        "metadata"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:rustfmt.toml",
+      "type": "config",
+      "name": "rustfmt.toml",
+      "filePath": "rustfmt.toml",
+      "summary": "Rust formatter configuration for consistent code style.",
+      "tags": [
+        "configuration",
+        "rust",
+        "code-style"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.github/dependabot.yml",
+      "type": "config",
+      "name": "dependabot.yml",
+      "filePath": ".github/dependabot.yml",
+      "summary": "GitHub Dependabot configuration for automated dependency updates across Cargo, GitHub Actions, and Docker ecosystems.",
+      "tags": [
+        "configuration",
+        "dependency-management",
+        "automation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/pull_request_template.md",
+      "type": "document",
+      "name": "pull_request_template.md",
+      "filePath": ".github/pull_request_template.md",
+      "summary": "GitHub pull request template providing a checklist and description guidelines for contributors.",
+      "tags": [
+        "documentation",
+        "github",
+        "contribution"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check-dco.sh",
+      "type": "file",
+      "name": "check-dco.sh",
+      "filePath": "scripts/check-dco.sh",
+      "summary": "Shell script that checks commit messages for Developer Certificate of Origin (DCO) sign-off, enforcing the DCO process for contributions.",
+      "tags": [
+        "script",
+        "dco",
+        "compliance",
+        "contribution"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/contract.rs",
+      "type": "file",
+      "name": "contract.rs",
+      "filePath": "tests/contract.rs",
+      "summary": "Integration test suite that loads the built .oxp plugin file through OxiGuitar's plugin host to verify the plugin interface contract is satisfied.",
+      "tags": [
+        "test",
+        "integration-test",
+        "contract-testing",
+        "plugin-interface"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/eq.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/section.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/settings.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/section.rs",
+      "target": "file:src/settings.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "file:src/eq.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Shape",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Band",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Coefficients",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Stage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Chain",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "function:src/eq.rs:Coefficients::of",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "function:src/eq.rs:Coefficients::response",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "function:src/eq.rs:Stage::run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "function:src/eq.rs:Chain::process",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "class:src/lib.rs:EqPlugin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "class:src/lib.rs:Equalizer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "function:src/lib.rs:prepare",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/section.rs",
+      "target": "class:src/section.rs:Section",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/section.rs",
+      "target": "function:src/section.rs:content",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/section.rs",
+      "target": "function:src/section.rs:on",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "class:src/settings.rs:Mode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "class:src/settings.rs:Track",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "function:src/settings.rs:gain",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "function:src/settings.rs:bands",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/lib.rs:EqPlugin",
+      "target": "function:src/lib.rs:prepare",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/lib.rs:EqPlugin",
+      "target": "class:src/lib.rs:Equalizer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:src/lib.rs:prepare",
+      "target": "class:src/eq.rs:Chain",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/lib.rs:prepare",
+      "target": "class:src/settings.rs:Track",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/section.rs:content",
+      "target": "class:src/settings.rs:Track",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/section.rs:on",
+      "target": "class:src/settings.rs:Track",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/settings.rs:bands",
+      "target": "class:src/eq.rs:Band",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/eq.rs:Chain::process",
+      "target": "function:src/eq.rs:Stage::run",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "class:src/lib.rs:Equalizer",
+      "target": "class:src/eq.rs:Chain",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "class:src/eq.rs:Chain",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "class:src/lib.rs:EqPlugin",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/section.rs",
+      "target": "class:src/section.rs:Section",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "class:src/settings.rs:Mode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "class:src/settings.rs:Track",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/settings.rs",
+      "target": "function:src/settings.rs:gain",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Shape",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Band",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/eq.rs",
+      "target": "class:src/eq.rs:Coefficients",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:build-oxp.sh",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CONTRIBUTING.md",
+      "target": "config:Cargo.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:Cargo.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:build-oxp.sh",
+      "target": "config:Cargo.toml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:Cargo.toml",
+      "target": "config:clippy.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:Cargo.toml",
+      "target": "config:deny.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:Cargo.toml",
+      "target": "config:rustfmt.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:manifest.json",
+      "target": "config:Cargo.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:tests/contract.rs",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:scripts/check-dco.sh",
+      "target": "document:CONTRIBUTING.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.github/dependabot.yml",
+      "target": "config:Cargo.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:core",
+      "name": "Core",
+      "description": "The Rust source files implementing the equalizer engine: biquad filter math (eq.rs), plugin interface wiring (lib.rs), UI section rendering (section.rs), and settings persistence (settings.rs).",
+      "nodeIds": [
+        "file:src/eq.rs",
+        "file:src/lib.rs",
+        "file:src/section.rs",
+        "file:src/settings.rs",
+        "class:src/eq.rs:Shape",
+        "class:src/eq.rs:Band",
+        "class:src/eq.rs:Coefficients",
+        "class:src/eq.rs:Stage",
+        "class:src/eq.rs:Chain",
+        "function:src/eq.rs:Coefficients::of",
+        "function:src/eq.rs:Coefficients::response",
+        "function:src/eq.rs:Stage::run",
+        "function:src/eq.rs:Chain::process",
+        "class:src/lib.rs:EqPlugin",
+        "class:src/lib.rs:Equalizer",
+        "function:src/lib.rs:prepare",
+        "class:src/section.rs:Section",
+        "function:src/section.rs:content",
+        "function:src/section.rs:on",
+        "class:src/settings.rs:Mode",
+        "class:src/settings.rs:Track",
+        "function:src/settings.rs:gain",
+        "function:src/settings.rs:bands"
+      ]
+    },
+    {
+      "id": "layer:ci-cd",
+      "name": "CI/CD",
+      "description": "GitHub Actions workflows for continuous integration (ci.yml), artifact publishing (publish.yml), and release builds (release.yml).",
+      "nodeIds": [
+        "file:.github/workflows/ci.yml",
+        "file:.github/workflows/publish.yml",
+        "file:.github/workflows/release.yml"
+      ]
+    },
+    {
+      "id": "layer:configuration",
+      "name": "Configuration",
+      "description": "Build and project configuration: Cargo.toml for dependencies and lints, manifest.json for plugin metadata, and Rust tooling configs (clippy, deny, rustfmt).",
+      "nodeIds": [
+        "config:Cargo.toml",
+        "config:manifest.json",
+        "config:clippy.toml",
+        "config:deny.toml",
+        "config:rustfmt.toml",
+        "config:.github/dependabot.yml"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation",
+      "description": "Project documentation: README (user guide), CHANGELOG (version history), CONTRIBUTING (contribution guidelines), CLAUDE (AI assistant instructions), and the PR template.",
+      "nodeIds": [
+        "document:README.md",
+        "document:CHANGELOG.md",
+        "document:CONTRIBUTING.md",
+        "document:CLAUDE.md",
+        "document:.github/pull_request_template.md"
+      ]
+    },
+    {
+      "id": "layer:build",
+      "name": "Build",
+      "description": "Build and compliance scripts: build-oxp.sh for packaging the plugin, and check-dco.sh for verifying DCO sign-off on commits.",
+      "nodeIds": [
+        "file:build-oxp.sh",
+        "file:scripts/check-dco.sh"
+      ]
+    },
+    {
+      "id": "layer:test",
+      "name": "Test",
+      "description": "Integration tests that load the built .oxp plugin through OxiGuitar's plugin host to verify the plugin interface contract.",
+      "nodeIds": [
+        "file:tests/contract.rs"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project Overview",
+      "description": "Start with README.md to understand what this project is: an OxiGuitar equalizer plugin that provides both a simple 3-band (bass/middle/treble) and a full 10-band graphic EQ. The README covers the key features, installation instructions, and how the plugin fits into the OxiGuitar host application. This gives you the big-picture context before diving into any code.",
+      "nodeIds": [
+        "document:README.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Build Configuration",
+      "description": "Cargo.toml defines the Rust package, declares the oxiguitar-plugin SDK dependency, and configures lints that enforce safety (deny unsafe code) and documentation. manifest.json is the OxiGuitar-specific plugin manifest that declares the plugin ID, name, interface version, and which effects and track sections it registers. Together these two files define how the project is built and how the host discovers it.",
+      "nodeIds": [
+        "config:Cargo.toml",
+        "config:manifest.json"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Plugin Entry Point",
+      "description": "lib.rs is the plugin's entry point into the OxiGuitar host. It defines EqPlugin, which implements the host's plugin interface with start, effect, track_section, and prepare methods. The prepare function is the critical bridge: it reads per-track settings, builds an audio Chain from the bands, and returns either a Through (bypass) or Equalizer processor. This file wires together the engine, settings, and UI into a single cohesive plugin.",
+      "nodeIds": [
+        "file:src/lib.rs",
+        "class:src/lib.rs:EqPlugin",
+        "function:src/lib.rs:prepare"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Equalizer Engine",
+      "description": "eq.rs is the heart of the plugin — it implements the audio DSP using Robert Bristow-Johnson's cookbook biquad filters. Shape defines the three filter types (LowShelf for bass, Peak for midrange, HighShelf for treble). Band holds a filter's shape, frequency, and gain. Coefficients pre-computes the biquad coefficients (b0, b1, b2, a1, a2) from a Band at a given sample rate. Stage holds per-channel filter state for stereo processing, and Chain serializes all stages to process audio samples in 256-sample chunks. This is where the actual equalization happens.",
+      "nodeIds": [
+        "file:src/eq.rs",
+        "class:src/eq.rs:Shape",
+        "class:src/eq.rs:Band",
+        "class:src/eq.rs:Coefficients",
+        "class:src/eq.rs:Stage",
+        "class:src/eq.rs:Chain",
+        "function:src/eq.rs:Coefficients::of",
+        "function:src/eq.rs:Stage::run",
+        "function:src/eq.rs:Chain::process"
+      ],
+      "languageLesson": "Rust's ownership model shines here: Stage holds per-channel delay line state (z) that is mutated in-place during sample processing, avoiding allocations in the real-time audio path. The Coefficients struct is immutable once created, enabling safe sharing across channels without synchronization."
+    },
+    {
+      "order": 5,
+      "title": "Settings & Persistence",
+      "description": "settings.rs manages the equalizer's user-configurable state. Mode is an enum with three values: Off (bypass), Basic (3-band EQ), and Graphic (10-band octave-spaced). Track stores the current mode plus per-band gain values for both modes, and supports JSON serialization so settings survive across sessions. The gain function quantizes values to half-decibel steps in the -12 to +12 dB range, and bands converts stored gain values into Band objects that the engine can consume. This file is the most depended-on in the codebase (fan-in of 5), reflecting how central settings are to both the UI and audio processing.",
+      "nodeIds": [
+        "file:src/settings.rs",
+        "class:src/settings.rs:Mode",
+        "class:src/settings.rs:Track",
+        "function:src/settings.rs:gain",
+        "function:src/settings.rs:bands"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "UI Section",
+      "description": "section.rs renders the equalizer in OxiGuitar's track dialog. Section builds the UI widget tree with the content function (mode selector plus per-band gain sliders) and handles user interaction through the on event handler. When the user changes the mode or adjusts a slider, on updates the Track settings, which then flow through to the audio engine via the Chain. This is the bridge between user intent and audio output.",
+      "nodeIds": [
+        "file:src/section.rs",
+        "class:src/section.rs:Section",
+        "function:src/section.rs:content",
+        "function:src/section.rs:on"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "Build & Packaging",
+      "description": "build-oxp.sh compiles the Rust plugin as a cdylib (dynamic library) with the oxp feature flag and packages the output as a versioned .oxp plugin file that OxiGuitar can load. The script depends on Cargo.toml for build configuration. check-dco.sh enforces the Developer Certificate of Origin on commit messages, ensuring contributors certify their right to submit code. These scripts turn source code into a distributable plugin.",
+      "nodeIds": [
+        "file:build-oxp.sh",
+        "file:scripts/check-dco.sh"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "Integration Tests",
+      "description": "contract.rs is the integration test suite that loads the built .oxp plugin file through OxiGuitar's actual plugin host, verifying that the plugin interface contract is satisfied end-to-end. This is the ultimate validation: it doesn't just unit-test individual functions, but proves the complete plugin can be loaded and used by the host application.",
+      "nodeIds": [
+        "file:tests/contract.rs"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "CI/CD & Release",
+      "description": "Three GitHub Actions workflows handle the full release lifecycle. ci.yml runs on every push and pull request: it builds the plugin with cargo test, produces the .oxp artifact, and uploads it as a workflow artifact for verification. release.yml triggers on GitHub releases and builds platform-specific artifacts for Linux, Windows, and macOS. publish.yml creates the final release assets including zips, .deb packages, .rpm packages, and installers, then uploads them to GitHub Releases. Together these ensure every change is tested and every release is properly packaged.",
+      "nodeIds": [
+        "file:.github/workflows/ci.yml",
+        "file:.github/workflows/release.yml",
+        "file:.github/workflows/publish.yml"
+      ]
+    }
+  ]
+}
