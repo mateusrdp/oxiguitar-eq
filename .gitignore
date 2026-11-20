@@ -17,3 +17,6 @@ Thumbs.db
 .ua/intermediate/
 .ua/tmp/
 .ua/trash-\*/
+
+# The built manual
+/docs/manual/book/
