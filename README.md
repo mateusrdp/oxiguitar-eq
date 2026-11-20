@@ -12,9 +12,13 @@ The equalizer plugin for [OxiGuitar](https://github.com/mateusrdp/oxiguitar), a 
 - No latency, and nothing allocated while it plays. The filters are Robert Bristow-Johnson's cookbook biquads, our own code, with no other library.
 - With the NAM plugin on the same track, OxiGuitar runs the amp first and then the equalizer; the track dialog moves one before the other.
 
+## Manual
+
+The manual is at <https://mateusrdp.github.io/oxiguitar-eq/>. Its source is in [docs/manual](docs/manual). It covers what the plugin is for, how it works, what it needs and how to install it.
+
 ## Install
 
-Every [release](https://github.com/mateusrdp/oxiguitar-eq/releases) holds a zip per system (Linux x86_64 and ARM64, Windows x86_64 and ARM64, macOS), a `.deb` and an `.rpm` for Linux, a per-user Windows installer (no administrator needed), a macOS `.pkg`, and a `SHA256SUMS` file. The OxiGuitar manual's [install page](https://mateusrdp.github.io/oxiguitar/installing.html) says which one to use and how to keep the plugin updated through your package manager. The plugin needs OxiGuitar 0.20.0 or later (plugin interface 1.8); its 0.2 releases work with 0.14 and later, its 0.1 releases with 0.11 and later.
+Every [release](https://github.com/mateusrdp/oxiguitar-eq/releases) holds a zip per system (Linux x86_64 and ARM64, Windows x86_64 and ARM64, macOS), a `.deb` and an `.rpm` for Linux, a per-user Windows installer (no administrator needed), a macOS `.pkg`, and a `SHA256SUMS` file. The [manual's install page](https://mateusrdp.github.io/oxiguitar-eq/install.html) says which one to use and how to keep it updated. The plugin needs OxiGuitar 0.20.0 or later (plugin interface 1.8); its 0.2 releases work with 0.14 and later, its 0.1 releases with 0.11 and later.
 
 ## Build and test
 
