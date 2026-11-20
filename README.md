@@ -27,6 +27,7 @@ Rust 1.99 or later from [rustup](https://rustup.rs). The plugin SDK comes from O
 ```sh
 cargo test          # unit tests (the filters against the cookbook's responses), the contract suite on the built .oxp file, and the real-time checks
 ./build-oxp.sh      # dist/eq-VERSION-SYSTEM-ARCH.oxp
+python3 scripts/test-all.py   # every test, as the manual's Testing page says
 ```
 
 ## Licence
