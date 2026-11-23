@@ -2,6 +2,8 @@
 
 The equalizer plugin for [OxiGuitar](https://github.com/mateusrdp/oxiguitar), a free, open-source guitar tablature and score viewer, editor and player for Windows, macOS and Linux. It shapes a track's sound after its instrument: on any track (guitars, basses, drums, keys), with or without an amp model, so a SoundFont or SFZ track can be shaped where an amp model can't run.
 
+In plain words: an equalizer turns some frequencies up and others down, like the bass, middle and treble knobs on an amp. Use it to take the harshness off a sound set, add body to a thin one, or make a guitar sit better in the mix. The [manual](https://mateusrdp.github.io/oxiguitar-eq/) explains hertz, decibels and the two modes.
+
 - Plugin file `eq.oxp`, id `oxiguitar.eq`, shown as **Equalizer**.
 - Per track, in the track dialog's section **Equalizer** (the Track tab), kept in the song's `.oxg` file beside it:
   - **Off**, the default: the track passes untouched.
@@ -29,6 +31,10 @@ cargo test          # unit tests (the filters against the cookbook's responses),
 ./build-oxp.sh      # dist/eq-VERSION-SYSTEM-ARCH.oxp
 python3 scripts/test-all.py   # every test, as the manual's Testing page says
 ```
+
+## Credits
+
+The filters are our own code, from Robert Bristow-Johnson's [Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/). Built on OxiGuitar's plugin SDK. The manual's [Credits](https://mateusrdp.github.io/oxiguitar-eq/credits.html) page lists every project with its authors and licence. Thank you to all of them.
 
 ## Licence
 
