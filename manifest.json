@@ -1,9 +1,9 @@
 {
-  "interface": "1.8",
+  "interface": "1.16",
   "id": "oxiguitar.eq",
   "name": "Equalizer",
   "version": "0.4.0",
-  "description": "A three-band or ten-band equalizer on any track, with or without an amp model, set in the track dialog.",
+  "description": "A three-band or ten-band equalizer on any track, with or without an amp model, set in the Track tab.",
   "authors": ["Mateus Rocha de Paula", "The OxiGuitar contributors"],
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/mateusrdp/oxiguitar-eq",
@@ -12,5 +12,9 @@
   ],
   "track_sections": [
     { "id": "eq", "title": "Equalizer" }
+  ],
+  "ui": "ui/eq.slint",
+  "views": [
+    { "id": "eq", "component": "EqSection", "place": "track", "title": "Equalizer" }
   ]
 }

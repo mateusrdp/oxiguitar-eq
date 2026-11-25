@@ -1,6 +1,6 @@
 # Equalizer plugin
 
-This plugin lets you change the tone of a track: more bass, less boxiness, a bit more sparkle. It works on any track, guitars, basses, drums or keys, whether the track plays a sound set alone or through an amp model. You set it per track in the track dialog's **Equalizer** section ([How to use it](use-cases.md) shows where), and it is saved with the song in its `.oxg` file beside it.
+This plugin lets you change the tone of a track: more bass, less boxiness, a bit more sparkle. It works on any track, guitars, basses, drums or keys, whether the track plays a sound set alone or through an amp model. You set it per track in the Track tab's **Equalizer** section ([How to use it](use-cases.md) shows where), and it is saved with the song in its `.oxg` file beside it.
 
 ## What an equalizer does
 
