@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Mateus Rocha de Paula and the OxiGuitar contributors
 
-//! The track dialog's section "Equalizer", for every class of instrument:
+//! The Track tab's section "Equalizer", for every class of instrument:
 //! the mode (Off, Basic, Graphic), a slider per band of the mode picked,
-//! and Flat, which sets them to 0 dB. A drawn curve would need a canvas,
-//! which track sections don't have (interface 1.4), so the bands are
-//! sliders, as the NAM section's levels are.
+//! and Flat, which sets them to 0 dB. Drawn by `ui/eq.slint` (plugin
+//! interface 1.16); this side sets its properties and changes the track's
+//! settings when the user moves something.
 
-use oxiguitar_plugin::serde_json::{Map, Value};
-use oxiguitar_plugin::{Error, Row, TabContent, TabEvent, TrackInfo, TrackSection, Widget};
+use std::sync::Mutex;
 
+use oxiguitar_plugin::serde_json::{Map, Value as Json};
+use oxiguitar_plugin::{Error, Host, TrackView, Ui, Value};
+
+use crate::SECTION;
 use crate::settings::{self, BASIC, GRAPHIC, Mode, RANGE, Track};
 
 /// The modes, in the order the choice lists them.
@@ -18,27 +21,6 @@ const MODES: [(Mode, &str); 3] = [
     (Mode::Basic, "Basic (3 bands)"),
     (Mode::Graphic, "Graphic (10 bands)"),
 ];
-
-/// The id of the Flat button.
-pub const FLAT: &str = "flat";
-
-/// The section.
-#[derive(Debug, Default)]
-pub struct Section;
-
-fn label(text: impl Into<String>, muted: bool) -> Widget {
-    Widget::Label {
-        text: text.into(),
-        muted,
-    }
-}
-
-/// A band's slider's id: the mode's key, then the band's place
-/// (`basic-0`, `graphic-9`; ids are lowercase letters and digits joined
-/// by `-` or `.`).
-fn band_id(mode: Mode, index: usize) -> String {
-    format!("{}-{index}", mode.key())
-}
 
 /// The names of the bands of `mode`.
 fn names(mode: Mode) -> Vec<&'static str> {
@@ -49,201 +31,248 @@ fn names(mode: Mode) -> Vec<&'static str> {
     }
 }
 
-impl TrackSection for Section {
-    fn content(&self, _track: &TrackInfo, settings: &Map<String, Value>) -> TabContent {
-        let mut t = Track::from_map(settings);
-        let mode = t.mode;
-        let mut rows = vec![Row {
-            widgets: vec![
-                label("Mode", false),
-                Widget::Choice {
-                    id: "mode".into(),
-                    options: MODES.iter().map(|m| m.1.to_owned()).collect(),
-                    selected: MODES.iter().position(|m| m.0 == mode).unwrap_or(0) as u32,
-                    enabled: true,
-                },
-            ],
-        }];
-        let gains = t.shown();
-        for (i, (name, gain)) in names(mode).into_iter().zip(gains.iter()).enumerate() {
-            rows.push(Row {
-                widgets: vec![
-                    label(name, false),
-                    Widget::Slider {
-                        id: band_id(mode, i),
-                        value: *gain,
-                        min: RANGE.0,
-                        max: RANGE.1,
-                        enabled: true,
-                    },
-                    label(format!("{gain:+.1} dB"), true),
-                ],
-            });
+/// The section's properties for a track whose settings are `settings`.
+pub fn properties(settings: &Map<String, Json>) -> Vec<(String, Value)> {
+    let mut t = Track::from_map(settings);
+    let mode = t.mode;
+    let gains = t.shown().to_vec();
+    let bands = names(mode)
+        .into_iter()
+        .zip(&gains)
+        .map(|(name, gain)| {
+            Value::Struct(vec![
+                ("name".into(), Value::String(name.into())),
+                ("gain".into(), Value::Number(f64::from(*gain))),
+                ("text".into(), Value::String(format!("{gain:+.1} dB"))),
+            ])
+        })
+        .collect();
+    vec![
+        (
+            "modes".into(),
+            Value::List(MODES.iter().map(|m| Value::String(m.1.into())).collect()),
+        ),
+        (
+            "mode".into(),
+            Value::Number(MODES.iter().position(|m| m.0 == mode).unwrap_or(0) as f64),
+        ),
+        ("bands".into(), Value::List(bands)),
+        (
+            "can-flatten".into(),
+            Value::Bool(gains.iter().any(|g| *g != 0.0)),
+        ),
+        ("minimum".into(), Value::Number(f64::from(RANGE.0))),
+        ("maximum".into(), Value::Number(f64::from(RANGE.1))),
+    ]
+}
+
+fn number(args: &[Value], i: usize) -> Option<f64> {
+    match args.get(i) {
+        Some(Value::Number(n)) if n.is_finite() => Some(*n),
+        _ => None,
+    }
+}
+
+/// Changes `settings` for the section's callback `callback` with `args`;
+/// false when it changes nothing (an unknown callback, a band or mode out
+/// of range).
+pub fn change(settings: &mut Map<String, Json>, callback: &str, args: &[Value]) -> bool {
+    let mut t = Track::from_map(settings);
+    match callback {
+        "mode-chosen" => match index(args).and_then(|i| MODES.get(i)) {
+            Some(m) => t.mode = m.0,
+            None => return false,
+        },
+        "flat" => {
+            if t.shown().iter().all(|g| *g == 0.0) {
+                return false;
+            }
+            t.shown().iter_mut().for_each(|g| *g = 0.0);
         }
-        if mode != Mode::Off {
-            rows.push(Row {
-                widgets: vec![Widget::Button {
-                    id: FLAT.into(),
-                    text: "Flat".into(),
-                    enabled: gains.iter().any(|g| *g != 0.0),
-                }],
-            });
+        "band-slid" => {
+            let (Some(i), Some(v)) = (index(args), number(args, 1)) else {
+                return false;
+            };
+            // Only the shown mode's bands exist.
+            let Some(band) = t.shown().get_mut(i) else {
+                return false;
+            };
+            *band = settings::gain(v);
         }
-        TabContent { rows }
+        _ => return false,
+    }
+    t.write(settings);
+    true
+}
+
+/// The first argument as an index: a whole number from 0.
+fn index(args: &[Value]) -> Option<usize> {
+    number(args, 0)
+        .filter(|i| *i >= 0.0 && i.fract() == 0.0)
+        .map(|i| i as usize)
+}
+
+/// The section's side in the plugin: the track's settings as the Track
+/// tab holds them.
+#[derive(Debug)]
+pub struct Section {
+    host: Host,
+    settings: Mutex<Map<String, Json>>,
+}
+
+impl Section {
+    /// The section, talking to OxiGuitar through `host`.
+    pub fn new(host: Host) -> Section {
+        Section {
+            host,
+            settings: Mutex::new(Map::new()),
+        }
+    }
+}
+
+impl Ui for Section {
+    fn shown(&self, view: &str, track: Option<&TrackView>) -> Result<(), Error> {
+        if view != SECTION {
+            return Ok(());
+        }
+        let settings: Map<String, Json> = track
+            .and_then(|t| oxiguitar_plugin::serde_json::from_str(&t.settings).ok())
+            .unwrap_or_default();
+        let properties = properties(&settings);
+        *self.settings.lock().unwrap_or_else(|e| e.into_inner()) = settings;
+        self.host.set_view(SECTION, properties)
     }
 
-    fn on(
-        &self,
-        _track: &TrackInfo,
-        settings: &mut Map<String, Value>,
-        widget: &str,
-        event: TabEvent,
-    ) -> Result<(), Error> {
-        let mut t = Track::from_map(settings);
-        match (widget, event) {
-            ("mode", TabEvent::Chosen(i)) => match MODES.get(i as usize) {
-                Some(m) => t.mode = m.0,
-                None => return Ok(()),
-            },
-            (FLAT, TabEvent::Clicked) => t.shown().iter_mut().for_each(|g| *g = 0.0),
-            (id, TabEvent::Slid(v)) => {
-                // Only the shown mode's sliders exist; one of another mode
-                // (an answer to a dialog since changed) changes nothing.
-                let Some(i) = (0..t.shown().len()).find(|&i| band_id(t.mode, i) == id) else {
-                    return Ok(());
-                };
-                t.shown()[i] = settings::gain(f64::from(v));
-            }
-            _ => return Ok(()),
+    fn callback(&self, view: &str, callback: &str, args: Vec<Value>) -> Result<(), Error> {
+        if view != SECTION {
+            return Ok(());
         }
-        t.write(settings);
-        Ok(())
+        let settings = {
+            let mut settings = self.settings.lock().unwrap_or_else(|e| e.into_inner());
+            if !change(&mut settings, callback, &args) {
+                return Ok(());
+            }
+            settings.clone()
+        };
+        self.host.set_track_settings(SECTION, &settings)?;
+        self.host.set_view(SECTION, properties(&settings))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use oxiguitar_plugin::InstrumentClass;
-    use oxiguitar_plugin::serde_json::json;
-
     use super::*;
 
-    fn track() -> TrackInfo {
-        TrackInfo {
-            index: 0,
-            name: "Drums".into(),
-            class: InstrumentClass::Drums,
-        }
+    fn get<'a>(p: &'a [(String, Value)], name: &str) -> &'a Value {
+        &p.iter().find(|(n, _)| n == name).unwrap().1
     }
 
-    fn ids(content: &TabContent) -> Vec<String> {
-        content
-            .rows
+    fn bands(p: &[(String, Value)]) -> Vec<(String, f64, String)> {
+        let Value::List(bands) = get(p, "bands") else {
+            panic!()
+        };
+        bands
             .iter()
-            .flat_map(|r| &r.widgets)
-            .filter_map(|w| match w {
-                Widget::Choice { id, .. }
-                | Widget::Slider { id, .. }
-                | Widget::Button { id, .. } => Some(id.clone()),
-                _ => None,
+            .map(|b| {
+                let Value::Struct(f) = b else { panic!() };
+                let field = |n: &str| &f.iter().find(|(k, _)| k == n).unwrap().1;
+                match (field("name"), field("gain"), field("text")) {
+                    (Value::String(n), Value::Number(g), Value::String(t)) => {
+                        (n.clone(), *g, t.clone())
+                    }
+                    other => panic!("{other:?}"),
+                }
             })
             .collect()
+    }
+
+    fn chose(settings: &mut Map<String, Json>, mode: f64) {
+        change(settings, "mode-chosen", &[Value::Number(mode)]);
+    }
+
+    fn slid(settings: &mut Map<String, Json>, band: f64, gain: f64) -> bool {
+        change(
+            settings,
+            "band-slid",
+            &[Value::Number(band), Value::Number(gain)],
+        )
     }
 
     #[test]
     fn it_shows_the_mode_and_the_picked_mode_s_bands() {
         let mut settings = Map::new();
         // Off: the mode alone.
-        assert_eq!(ids(&Section.content(&track(), &settings)), ["mode"]);
-        Section
-            .on(&track(), &mut settings, "mode", TabEvent::Chosen(1))
-            .unwrap();
-        let basic = Section.content(&track(), &settings);
-        assert_eq!(ids(&basic), ["mode", "basic-0", "basic-1", "basic-2", FLAT]);
-        assert!(matches!(
-            &basic.rows[1].widgets[..],
-            [Widget::Label { text, .. }, Widget::Slider { min: -12.0, max: 12.0, .. }, Widget::Label { text: value, muted: true }]
-                if text == "Bass" && value == "+0.0 dB"
-        ));
+        assert!(bands(&properties(&settings)).is_empty());
+        chose(&mut settings, 1.0);
+        let basic = properties(&settings);
+        let b = bands(&basic);
+        assert_eq!(b.len(), 3);
+        assert_eq!(b[0], ("Bass".into(), 0.0, "+0.0 dB".into()));
+        assert_eq!(get(&basic, "minimum"), &Value::Number(-12.0));
         // Flat is greyed out while every band is at 0 dB.
-        assert!(matches!(
-            basic.rows[4].widgets[0],
-            Widget::Button { enabled: false, .. }
-        ));
-        Section
-            .on(&track(), &mut settings, "mode", TabEvent::Chosen(2))
-            .unwrap();
-        let graphic = Section.content(&track(), &settings);
-        assert_eq!(ids(&graphic).len(), 1 + 10 + 1);
-        assert!(matches!(
-            &graphic.rows[10].widgets[0],
-            Widget::Label { text, .. } if text == "16 kHz"
-        ));
+        assert_eq!(get(&basic, "can-flatten"), &Value::Bool(false));
+        chose(&mut settings, 2.0);
+        let graphic = bands(&properties(&settings));
+        assert_eq!(graphic.len(), 10);
+        assert_eq!(graphic[9].0, "16 kHz");
     }
 
-    /// What the section shows in every mode, with every band moved, is
-    /// what the host can show: valid, unique ids and sane ranges.
+    /// Each mode keeps its own bands; a band is rounded and clamped; Flat
+    /// sets the shown mode's to 0 dB; what is out of range changes
+    /// nothing.
     #[test]
-    fn every_mode_s_contents_can_be_shown() {
-        for mode in 0..3 {
-            let mut settings = Map::new();
-            Section
-                .on(&track(), &mut settings, "mode", TabEvent::Chosen(mode))
-                .unwrap();
-            for i in 0..10 {
-                for kind in ["basic", "graphic"] {
-                    let id = format!("{kind}-{i}");
-                    Section
-                        .on(&track(), &mut settings, &id, TabEvent::Slid(3.0))
-                        .unwrap();
-                }
-            }
-            let content = Section.content(&track(), &settings);
-            assert_eq!(content.problems(), Vec::<String>::new(), "mode {mode}");
-        }
-    }
-
-    #[test]
-    fn sliders_set_their_band_on_the_half_decibel_and_flat_only_the_shown_mode() {
+    fn the_bands_move_and_flatten() {
         let mut settings = Map::new();
-        settings.insert("later".into(), json!(true));
-        let on = |s: &mut Map<String, Value>, id: &str, e: TabEvent| {
-            Section.on(&track(), s, id, e).unwrap();
-        };
-        on(&mut settings, "mode", TabEvent::Chosen(1));
-        on(&mut settings, "basic-2", TabEvent::Slid(4.3));
-        on(&mut settings, "basic-0", TabEvent::Slid(-20.0));
-        // A slider of the mode not shown changes nothing.
-        on(&mut settings, "graphic-3", TabEvent::Slid(5.0));
-        on(&mut settings, "mode", TabEvent::Chosen(2));
-        on(&mut settings, "graphic-9", TabEvent::Slid(-2.74));
-        on(&mut settings, "basic-1", TabEvent::Slid(5.0));
-        let t = Track::from_map(&settings);
-        assert_eq!(t.mode, Mode::Graphic);
-        assert_eq!(t.basic, [-12.0, 0.0, 4.5]);
+        chose(&mut settings, 1.0);
+        assert!(slid(&mut settings, 2.0, 4.3));
+        assert!(slid(&mut settings, 0.0, -20.0));
+        chose(&mut settings, 2.0);
+        assert!(slid(&mut settings, 9.0, -2.74));
+        assert!(!slid(&mut settings, 10.0, 1.0));
+        chose(&mut settings, 1.0);
+        let b = bands(&properties(&settings));
+        assert_eq!((b[0].1, b[2].1), (-12.0, f64::from(settings::gain(4.3))));
         assert_eq!(
-            t.graphic,
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.5]
+            get(&properties(&settings), "can-flatten"),
+            &Value::Bool(true)
         );
-        let content = Section.content(&track(), &settings);
-        assert!(matches!(
-            content.rows[11].widgets[0],
-            Widget::Button { enabled: true, .. }
-        ));
-        // Flat sets the graphic bands to 0 dB; the basic ones stay, and
-        // come back with their mode.
-        on(&mut settings, FLAT, TabEvent::Clicked);
-        let t = Track::from_map(&settings);
-        assert_eq!(t.graphic, [0.0; 10]);
-        assert_eq!(t.basic, [-12.0, 0.0, 4.5]);
-        on(&mut settings, "mode", TabEvent::Chosen(1));
-        assert_eq!(Track::from_map(&settings).mode, Mode::Basic);
-        // A line the choice doesn't have, or a widget it doesn't know,
-        // changes nothing; keys of a later version stay.
+        assert!(change(&mut settings, "flat", &[]));
+        assert!(bands(&properties(&settings)).iter().all(|b| b.1 == 0.0));
+        assert!(!change(&mut settings, "flat", &[]));
+        // The graphic bands were kept.
+        chose(&mut settings, 2.0);
+        assert_eq!(
+            bands(&properties(&settings))[9].1,
+            f64::from(settings::gain(-2.74))
+        );
         let before = settings.clone();
-        on(&mut settings, "mode", TabEvent::Chosen(7));
-        on(&mut settings, "other", TabEvent::Clicked);
+        assert!(!change(&mut settings, "mode-chosen", &[Value::Number(7.0)]));
+        assert!(!change(
+            &mut settings,
+            "mode-chosen",
+            &[Value::Number(-1.0)]
+        ));
+        assert!(!change(&mut settings, "other", &[]));
         assert_eq!(settings, before);
-        assert_eq!(settings["later"], json!(true));
+        assert_eq!(Track::from_map(&settings).mode, Mode::Graphic);
+    }
+
+    /// The file compiles as OxiGuitar compiles it, with every property and
+    /// callback this side uses.
+    #[test]
+    fn the_slint_file_has_what_the_section_sets_and_hears() {
+        let file = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/eq.slint");
+        let compiled = oxiguitar_plugin_test::compile_ui_file(&file).unwrap();
+        let c = compiled
+            .components
+            .iter()
+            .find(|c| c.name == "EqSection")
+            .unwrap();
+        for (name, _) in properties(&Map::new()) {
+            assert!(c.properties.contains(&name), "{name}");
+        }
+        for name in ["mode-chosen", "band-slid", "flat"] {
+            assert!(c.callbacks.iter().any(|p| *p == name), "{name}");
+        }
     }
 }

@@ -10,13 +10,14 @@
 //!   own code, no latency.
 //! - `settings` is a track's choice: off, three bands (Bass, Middle,
 //!   Treble) or ten (31 Hz to 16 kHz), each −12 to +12 dB.
-//! - `section` shows it in the track dialog, as the section "Equalizer".
+//! - `section` shows it in the Track tab, as the section "Equalizer"
+//!   (`ui/eq.slint`, plugin interface 1.16).
 //!
 //! A change of the section while the song plays reaches the running
 //! equalizer (interface 1.5), whose bands glide to their new gains.
 
 use oxiguitar_plugin::audio::PrepareEffect;
-use oxiguitar_plugin::{Effect, Error, Host, Plugin, Processor, TrackSection, Update};
+use oxiguitar_plugin::{Effect, Error, Host, Plugin, Processor, Ui, Update};
 
 pub mod eq;
 pub mod section;
@@ -25,28 +26,37 @@ pub mod settings;
 /// The effect's id in the manifest.
 pub const EFFECT: &str = "eq";
 
-/// The track dialog's section's id in the manifest.
+/// The Track tab's section's id in the manifest: a view and a track
+/// section.
 pub const SECTION: &str = "eq";
 
 /// The plugin.
 #[derive(Debug)]
-pub struct EqPlugin;
+pub struct EqPlugin {
+    section: section::Section,
+}
 
 impl Plugin for EqPlugin {
-    fn start(_host: Host) -> Result<EqPlugin, Error> {
-        Ok(EqPlugin)
+    fn start(host: Host) -> Result<EqPlugin, Error> {
+        Ok(EqPlugin {
+            section: section::Section::new(host),
+        })
     }
 
     fn effect(&self, id: &str) -> Option<&dyn Effect> {
-        (id == EFFECT).then_some(self as &dyn Effect)
+        (id == EFFECT).then_some(&Equalizers as &dyn Effect)
     }
 
-    fn track_section(&self, id: &str) -> Option<&dyn TrackSection> {
-        (id == SECTION).then_some(&section::Section as &dyn TrackSection)
+    fn ui(&self) -> Option<&dyn Ui> {
+        Some(&self.section)
     }
 }
 
-impl Effect for EqPlugin {
+/// The effect `eq`: the equalizers of every track.
+#[derive(Debug)]
+pub struct Equalizers;
+
+impl Effect for Equalizers {
     fn prepare(&self, prepare: &PrepareEffect) -> Result<Box<dyn Processor>, Error> {
         let track = settings::Track::from_text(&prepare.track.settings);
         Ok(Box::new(Equalizer(eq::Bank::new(
@@ -127,7 +137,7 @@ mod tests {
             .map(|i| ((i * 37) % 101) as f32 / 101.0 - 0.5)
             .collect();
         let run = |settings: &str| {
-            let mut p = EqPlugin.prepare(&prepared(settings)).unwrap();
+            let mut p = Equalizers.prepare(&prepared(settings)).unwrap();
             assert_eq!(p.latency(), 0);
             let (mut l, mut r) = (sound.clone(), sound.clone());
             p.process(&mut l, &mut r);
@@ -155,7 +165,7 @@ mod tests {
     #[test]
     fn a_running_equalizer_follows_new_settings() {
         let raised = r#"{"mode": "basic", "basic": [12, 0, 0]}"#;
-        let mut p = EqPlugin.prepare(&prepared("{}")).unwrap();
+        let mut p = Equalizers.prepare(&prepared("{}")).unwrap();
         let sound = vec![0.25f32; 4800];
         let run = |p: &mut Box<dyn Processor>| {
             let (mut l, mut r) = (sound.clone(), sound.clone());
@@ -165,7 +175,7 @@ mod tests {
             l
         };
         assert_eq!(run(&mut p), sound);
-        let mut u = EqPlugin.update(&prepared(raised), "{}").unwrap().unwrap();
+        let mut u = Equalizers.update(&prepared(raised), "{}").unwrap().unwrap();
         p.apply(&mut u);
         let louder = run(&mut p);
         // A steady signal, a low shelf of 12 dB: about four times louder
@@ -176,7 +186,7 @@ mod tests {
             louder[4799]
         );
         assert!(louder[0] < 0.26, "{}", louder[0]);
-        let mut u = EqPlugin
+        let mut u = Equalizers
             .update(&prepared("not json"), "{}")
             .unwrap()
             .unwrap();
