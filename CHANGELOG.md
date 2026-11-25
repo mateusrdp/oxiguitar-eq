@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-25
+
 ### Changed
 
 - **The Equalizer section is drawn in Slint** (mateusrdp/oxiguitar#346, plugin interface 1.16): `ui/eq.slint`, packed in the plugin file, which OxiGuitar runs with its own widgets, fonts and colours. Same mode picker, band sliders and Flat as before. The plugin needs OxiGuitar 0.23.0 or later (it already did, since its plugin file is an archive); the README and the manual now say so.
