@@ -269,7 +269,7 @@ mod tests {
             .find(|c| c.name == "EqSection")
             .unwrap();
         for (name, _) in properties(&Map::new()) {
-            assert!(c.properties.iter().any(|p| *p == name), "{name}");
+            assert!(c.properties.contains(&name), "{name}");
         }
         for name in ["mode-chosen", "band-slid", "flat"] {
             assert!(c.callbacks.iter().any(|p| *p == name), "{name}");
