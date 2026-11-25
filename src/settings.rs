@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Mateus Rocha de Paula and the OxiGuitar contributors
 
 //! A track's equalizer, kept per track beside the score (`FILE.oxg`, the
-//! track dialog's section, under `oxiguitar.eq`):
+//! Track tab's section, under `oxiguitar.eq`):
 //!
 //! ```json
 //! {"mode": "basic", "basic": [0, 0, 0], "graphic": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
