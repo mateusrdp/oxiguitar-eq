@@ -2,7 +2,7 @@
 
 ## How it fits into OxiGuitar
 
-The plugin is an *effect*: it sits on a track after the instrument that plays it. OxiGuitar hands it the track's sound in small blocks while the song plays, and the plugin hands them back changed. With the NAM plugin on the same track, the amp runs first and then the equalizer, as on a real rig where the EQ comes after the amp; the arrows in the track dialog swap them.
+The plugin is an *effect*: it sits on a track after the instrument that plays it. OxiGuitar hands it the track's sound in small blocks while the song plays, and the plugin hands them back changed. With the NAM plugin on the same track, the amp runs first and then the equalizer, as on a real rig where the EQ comes after the amp; the arrows in the Track tab swap them.
 
 Each band is a *biquad* filter, the standard small building block of digital EQs, designed from Robert Bristow-Johnson's *Audio EQ Cookbook*: low shelf, peak and high shelf for Basic, peaks for Graphic. The code is ours, with no other library. It runs on the audio thread with no latency and no memory allocated, and each band glides to a new gain over 20 ms so moving a slider never clicks.
 

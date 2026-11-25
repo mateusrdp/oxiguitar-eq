@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Mateus Rocha de Paula and the OxiGuitar contributors
+
+// The Track tab's Equalizer section (plugin interface 1.16): the mode, a
+// slider per band of the mode picked, and Flat. The plugin sets every
+// property (src/section.rs) and hears what the user changes.
+
+import { Button, ComboBox, Slider } from "std-widgets.slint";
+
+export struct Band {
+    name: string,
+    gain: float,
+    text: string,
+}
+
+export component EqSection {
+    in property <[string]> modes;
+    in-out property <int> mode;
+    in property <[Band]> bands;
+    in property <bool> can-flatten;
+    in property <float> minimum: -12;
+    in property <float> maximum: 12;
+    callback mode-chosen(int);
+    callback band-slid(int, float);
+    callback flat();
+
+    VerticalLayout {
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 8px;
+            Text {
+                text: "Mode";
+                vertical-alignment: center;
+            }
+            ComboBox {
+                model: root.modes;
+                current-index <=> root.mode;
+                selected => { root.mode-chosen(self.current-index); }
+            }
+        }
+        for band[i] in root.bands: HorizontalLayout {
+            spacing: 8px;
+            Text {
+                text: band.name;
+                min-width: 56px;
+                vertical-alignment: center;
+            }
+            Slider {
+                minimum: root.minimum;
+                maximum: root.maximum;
+                value: band.gain;
+                released(v) => { root.band-slid(i, v); }
+            }
+            Text {
+                text: band.text;
+                min-width: 60px;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+                opacity: 0.7;
+            }
+        }
+        if root.mode != 0: HorizontalLayout {
+            alignment: start;
+            Button {
+                text: "Flat";
+                enabled: root.can-flatten;
+                clicked => { root.flat(); }
+            }
+        }
+    }
+}
