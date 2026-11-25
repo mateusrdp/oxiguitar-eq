@@ -15,7 +15,7 @@ export struct Band {
 
 export component EqSection {
     in property <[string]> modes;
-    in property <int> mode;
+    in-out property <int> mode;
     in property <[Band]> bands;
     in property <bool> can-flatten;
     in property <float> minimum: -12;
@@ -34,7 +34,7 @@ export component EqSection {
             }
             ComboBox {
                 model: root.modes;
-                current-index: root.mode;
+                current-index <=> root.mode;
                 selected => { root.mode-chosen(self.current-index); }
             }
         }
