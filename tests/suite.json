@@ -1,0 +1,6 @@
+{
+  "repository": "mateusrdp/oxiguitar-eq",
+  "plugins": [
+    {"name": "eq", "package": "oxiguitar-eq-plugin", "library": "oxiguitar_eq_plugin"}
+  ]
+}

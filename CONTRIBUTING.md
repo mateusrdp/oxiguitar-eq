@@ -17,6 +17,10 @@ is the part every pull request meets first.
   into `main` with a merge commit.
 - CI must be green. The `ci-success` check sums up every other job.
 
+## Tests for every feature
+
+Every feature has tests, and a row on the manual's Features page (`docs/manual/src/features.md`) naming them. A pull request that adds or changes a feature, or a plugin, adds or updates both. Before opening it, run `python3 scripts/test-all.py`: everything must pass. CI checks the Features page on every system it tests; the full run, against the newest OxiGuitar release, is yours.
+
 ## Sign-off (Developer Certificate of Origin)
 
 We use the [Developer Certificate of Origin](https://developercertificate.org/)
